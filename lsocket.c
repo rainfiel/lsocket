@@ -7,16 +7,14 @@
  */
 
 #include <stdlib.h>
-#include <unistd.h>
 #include <stdio.h>
 #include <string.h>
 
 #ifdef _WIN32
-
 #include "win_compat.h"
-
+#define strcasecmp stricmp
 #else
-
+#include <unistd.h>
 #include <errno.h>
 #include <signal.h>
 #include <fcntl.h>
@@ -883,7 +881,7 @@ static int lsocket_sock_recv(lua_State *L)
 	if (lua_tonumber(L, 2) > UINT_MAX)
 		return luaL_error(L, "bad argument #1 to 'recv' (invalid number)");
 	
-	char *buf = malloc(howmuch);
+	char *buf = (char*)malloc(howmuch);
 	int nrd = recv(sock->sockfd, buf, howmuch, 0);
 	if (nrd < 0) {
 		free(buf);
@@ -930,7 +928,7 @@ static int lsocket_sock_recvfrom(lua_State *L)
 	char sabuf[SOCKADDR_BUFSIZ];
 	struct sockaddr *sa = (struct sockaddr*) sabuf;
 	socklen_t slen = sizeof(sabuf);
-	char *buf = malloc(howmuch);
+	char *buf = (char*)malloc(howmuch);
 	int nrd = recvfrom(sock->sockfd, buf, howmuch, 0, sa, &slen);
 	if (nrd < 0) {
 		free(buf);
