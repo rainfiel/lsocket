@@ -992,6 +992,7 @@ static int lsocket_sock_send(lua_State *L)
 	sigaction(SIGPIPE, &sa_old, NULL);
 	#endif
 		
+	//printf("%d %d %d\n", len, nwr, errno);
 	if (nwr < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			lua_pushboolean(L, 0);
@@ -1371,7 +1372,7 @@ static int lsocket_getinterfaces(lua_State *L)
 {
 #ifdef _WIN32
 	// todo use GetAdaptersAddresses instead
-	return luaL_error(L, "Not implement");
+	return win_getinterfaces(L);
 #else
 	struct ifaddrs *ifa;
 	char buf[SOCKADDR_BUFSIZ];

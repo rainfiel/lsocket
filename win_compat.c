@@ -147,3 +147,51 @@ init_socketlib(lua_State *L) {
 	}
 	init = 1;
 }
+
+int
+win_getinterfaces(lua_State *L) {
+	DWORD rv, size;
+	PIP_ADAPTER_ADDRESSES adapter_addresses, aa;
+	PIP_ADAPTER_UNICAST_ADDRESS ua;
+
+	rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, NULL, &size);
+	if (rv != ERROR_BUFFER_OVERFLOW) {
+		return luaL_error(L, "try GetAdaptersAddresses failed:%d", rv);
+	}
+	adapter_addresses = (PIP_ADAPTER_ADDRESSES)malloc(size);
+
+	rv = GetAdaptersAddresses(AF_UNSPEC, GAA_FLAG_INCLUDE_PREFIX, NULL, adapter_addresses, &size);
+	if (rv != ERROR_SUCCESS) {
+		free(adapter_addresses);
+		return luaL_error(L, "GetAdaptersAddresses failed:%d", rv);
+	}
+	
+	int i = 1;
+	char buf[SOCKADDR_BUFSIZ];
+	lua_newtable(L);
+	for (aa = adapter_addresses; aa != NULL; aa = aa->Next) {
+		for (ua = aa->FirstUnicastAddress; ua != NULL; ua = ua->Next) {
+			lua_newtable(L);
+			lua_pushliteral(L, "name");
+			memset(buf, 0, SOCKADDR_BUFSIZ);
+			WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName), buf, BUFSIZ, NULL, NULL);
+			lua_pushstring(L, buf);
+			lua_rawset(L, -3);
+			
+			lua_pushliteral(L, "family");
+			lua_pushstring(L, ua->Address.lpSockaddr->sa_family == AF_INET ? "inet" : "inet6");
+			lua_rawset(L, -3);
+
+			lua_pushliteral(L, "addr");
+			memset(buf, 0, SOCKADDR_BUFSIZ);
+			getnameinfo(ua->Address.lpSockaddr, ua->Address.iSockaddrLength, buf, sizeof(buf), NULL, 0,NI_NUMERICHOST);
+			lua_pushstring(L, buf);
+			lua_rawset(L, -3);
+			
+			lua_rawseti(L, -2, i++);
+		}
+	}
+
+	free(adapter_addresses);
+	return 1;
+}

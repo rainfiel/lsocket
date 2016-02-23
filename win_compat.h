@@ -71,6 +71,9 @@ struct sockaddr_un {
    char sun_path[UNIX_PATH_MAX];	/* pathname */
 };
 
+#define SOCKADDR_BUFSIZ (sizeof(struct sockaddr_un) + UNIX_PATH_MAX + 1)
+
 void init_socketlib(lua_State *L);
+int win_getinterfaces(lua_State *L);
 
 #endif
