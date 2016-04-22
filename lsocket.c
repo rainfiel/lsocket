@@ -1094,6 +1094,16 @@ static int lsocket_sock_close(lua_State *L)
 	return 1;
 }
 
+static int lsocket_sock_nodelay(lua_State *L)
+{
+	lSocket *sock = lsocket_checklSocket(L, 1);
+	
+	int on = 1;
+	int rlt = setsockopt(sock->sockfd, IPPROTO_TCP, TCP_NODELAY, &on, sizeof(on));
+	lua_pushinteger(L, rlt);
+	return 1;
+}
+
 /* socket method list
  */
 static const struct luaL_Reg lSocket_methods [] ={
@@ -1107,6 +1117,7 @@ static const struct luaL_Reg lSocket_methods [] ={
 	{"send", lsocket_sock_send},
 	{"sendto", lsocket_sock_sendto},
 	{"close", lsocket_sock_close},
+	{"nodelay", lsocket_sock_nodelay},
 	
 	{NULL, NULL}
 };
