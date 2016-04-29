@@ -174,7 +174,7 @@ win_getinterfaces(lua_State *L) {
 			lua_newtable(L);
 			lua_pushliteral(L, "name");
 			memset(buf, 0, SOCKADDR_BUFSIZ);
-			WideCharToMultiByte(CP_ACP, 0, aa->FriendlyName, wcslen(aa->FriendlyName), buf, BUFSIZ, NULL, NULL);
+			WideCharToMultiByte(CP_UTF8, 0, aa->FriendlyName, wcslen(aa->FriendlyName), buf, BUFSIZ, NULL, NULL);
 			lua_pushstring(L, buf);
 			lua_rawset(L, -3);
 			
