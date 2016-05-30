@@ -890,8 +890,10 @@ static int lsocket_sock_recv(lua_State *L)
 			lua_pushboolean(L, 0);
 		else
 			return lsocket_error(L, strerror(errno));
-	} else if (nrd == 0)
+	} else if (nrd == 0) {
 		lua_pushnil(L);
+		free(buf);
+	}
 	else {
 		lua_pushlstring(L, buf, nrd);
 		free(buf);
@@ -1105,6 +1107,35 @@ static int lsocket_sock_nodelay(lua_State *L)
 	return 1;
 }
 
+static int lsocket_sock_recv_buff(lua_State *L)
+{
+	lSocket *sock = lsocket_checklSocket(L, 1);
+	socklen_t size = (socklen_t)luaL_optinteger(L, 2, 0);
+
+	if (size >0){
+		socklen_t len = sizeof(size);
+		int rlt = setsockopt(sock->sockfd, SOL_SOCKET, SO_RCVBUF, (void*)&size, len);
+		if (rlt>=0) {
+			lua_pushboolean(L, true);
+		} else {
+			lua_pushboolean(L, false);
+		}
+		return 1;
+	} else {
+		socklen_t buff_size=0;
+		socklen_t len = sizeof(buff_size);
+		int rlt = getsockopt(sock->sockfd, SOL_SOCKET, SO_RCVBUF, (void*)&buff_size, &len);
+		if (rlt>=0) {
+			lua_pushboolean(L, true);
+			lua_pushinteger(L, buff_size);
+			return 2;
+		} else {
+			lua_pushboolean(L, false);
+			return 1;
+		}
+	}
+}
+
 /* socket method list
  */
 static const struct luaL_Reg lSocket_methods [] ={
@@ -1119,6 +1150,7 @@ static const struct luaL_Reg lSocket_methods [] ={
 	{"sendto", lsocket_sock_sendto},
 	{"close", lsocket_sock_close},
 	{"nodelay", lsocket_sock_nodelay},
+	{"recv_buff", lsocket_sock_recv_buff},
 	
 	{NULL, NULL}
 };
