@@ -49,10 +49,16 @@
 	#define HAVE_ABSTRACT_UDSOCKETS
 #endif
 
+#ifdef __cplusplus
 extern "C" {
+#endif
+    
 #include "lua.h"
 #include "lauxlib.h"
+    
+#ifdef __cplusplus
 };
+#endif
 #define LSOCKET_VERSION "1.4"
 
 #define LSOCKET "socket"
