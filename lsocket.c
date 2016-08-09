@@ -49,10 +49,11 @@
 	#define HAVE_ABSTRACT_UDSOCKETS
 #endif
 
+extern "C" {
 #include "lua.h"
 #include "lauxlib.h"
-
-#define LSOCKET_VERSION "1.3"
+};
+#define LSOCKET_VERSION "1.4"
 
 #define LSOCKET "socket"
 #define TOSTRING_BUFSIZ 64
@@ -141,6 +142,7 @@ static int lsocket_islSocket(lua_State *L, int index)
 static lSocket* lsocket_pushlSocket(lua_State *L)
 {
 	lSocket *sock = (lSocket*) lua_newuserdata(L, sizeof(lSocket));
+	sock->sockfd = -1;
 	luaL_getmetatable(L, LSOCKET);
 	lua_setmetatable(L, -2);
 	return sock;
@@ -880,10 +882,10 @@ static int lsocket_sock_recv(lua_State *L)
 	lSocket *sock = lsocket_checklSocket(L, 1);
 
 	uint32_t howmuch = luaL_optnumber(L, 2, READER_BUFSIZ);
-	if (lua_tonumber(L, 2) > UINT_MAX)
+	if (lua_tointeger(L, 2) > UINT_MAX)
 		return luaL_error(L, "bad argument #1 to 'recv' (invalid number)");
 	
-	char *buf = (char*)malloc(howmuch);
+	char *buf = (char *)malloc(howmuch);
 	int nrd = recv(sock->sockfd, buf, howmuch, 0);
 	if (nrd < 0) {
 		free(buf);
@@ -926,13 +928,13 @@ static int lsocket_sock_recvfrom(lua_State *L)
 {
 	lSocket *sock = lsocket_checklSocket(L, 1);
 	uint32_t howmuch = luaL_optnumber(L, 2, READER_BUFSIZ);
-	if (lua_tonumber(L, 2) > UINT_MAX)
+	if (lua_tointeger(L, 2) > UINT_MAX)
 		return luaL_error(L, "bad argument #1 to 'recvfrom' (invalid number)");
 	
 	char sabuf[SOCKADDR_BUFSIZ];
 	struct sockaddr *sa = (struct sockaddr*) sabuf;
 	socklen_t slen = sizeof(sabuf);
-	char *buf = (char*)malloc(howmuch);
+	char *buf = (char *)malloc(howmuch);
 	int nrd = recvfrom(sock->sockfd, buf, howmuch, 0, sa, &slen);
 	if (nrd < 0) {
 		free(buf);
@@ -940,9 +942,9 @@ static int lsocket_sock_recvfrom(lua_State *L)
 			lua_pushboolean(L, 0);
 		else
 			return lsocket_error(L, strerror(errno));
-	} else if (nrd == 0)
+	} else if (nrd == 0) {
 		lua_pushnil(L); /* not possible for udp, so should not get here */
-	else {
+	} else {
 		lua_pushlstring(L, buf, nrd);
 		free(buf);
 		char ipbuf[SOCKADDR_BUFSIZ];
@@ -996,7 +998,6 @@ static int lsocket_sock_send(lua_State *L)
 	sigaction(SIGPIPE, &sa_old, NULL);
 	#endif
 		
-	//printf("%d %d %d\n", len, nwr, errno);
 	if (nwr < 0) {
 		if (errno == EAGAIN || errno == EWOULDBLOCK)
 			lua_pushboolean(L, 0);
@@ -1305,6 +1306,7 @@ static int lsocket_select(lua_State *L)
 		top = 3;
 	}
 
+	const char *pszname = luaL_typename(L, top);
 	timeo = luaL_optnumber(L, top, -1);
 	
 	if (maxfd < 0 && timeo == -1) return lsocket_error(L, "no open sockets to check and no timeout set");
@@ -1486,6 +1488,7 @@ static int lsocket_ignore(lua_State *L)
  * 
  * open and initialize this library
  */
+
 int luaopen_lsocket(lua_State *L)
 {
 	init_socketlib(L);
