@@ -29,7 +29,12 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <dirent.h>
+ 
+#ifdef __ANDROID__
+#include "ifaddrs.h"
+#else
 #include <ifaddrs.h>
+#endif
 
 #define init_socketlib(L)
 
@@ -949,6 +954,7 @@ static int lsocket_sock_recvfrom(lua_State *L)
 		else
 			return lsocket_error(L, strerror(errno));
 	} else if (nrd == 0) {
+		free(buf);
 		lua_pushnil(L); /* not possible for udp, so should not get here */
 	} else {
 		lua_pushlstring(L, buf, nrd);
